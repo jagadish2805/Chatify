@@ -6,10 +6,22 @@ import { socketAuthMiddleware } from "../middleware/socket.auth.middleware.js";
 
 const app = express();
 const server = http.createServer(app);
+const hasConfiguredOrigins = ENV.ALLOWED_ORIGINS.length > 0;
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (!hasConfiguredOrigins) return true;
+  if (ENV.ALLOWED_ORIGINS.includes(origin)) return true;
+  if (origin.endsWith(".vercel.app")) {
+    return ENV.ALLOWED_ORIGINS.some((allowedOrigin) => allowedOrigin.endsWith(".vercel.app"));
+  }
+  return false;
+};
 
 const io = new Server(server, {
   cors: {
-    origin: [ENV.CLIENT_URL],
+    origin: (origin, callback) => {
+      callback(null, isAllowedOrigin(origin));
+    },
     credentials: true,
   },
 });
